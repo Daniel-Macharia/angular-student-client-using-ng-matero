@@ -1,0 +1,72 @@
+<mat-card class="m-4">
+    <mat-card-header class="d-flex justify-between w-100">
+        <mat-card-title>Student List</mat-card-title>
+        <button
+        (click)="onAddStudent()"
+        class="px-3 py-1 bg-green-600 text-white border rounded-pill">
+            + Add Student
+        </button>
+    </mat-card-header>
+
+    <mat-card-content>
+        <mtx-grid [data]="students"  
+        [columns]="columns"
+        [showToolbar]="false"
+        class="mat-elevation-z8 ftablel-width"
+        />
+    </mat-card-content>
+</mat-card>
+
+<!-- view student data template -->
+<ng-template #viewStudentDataDialog let-dialogRef="dialogRef">
+    <h2>
+        Student Details 
+    </h2>
+
+    <p>
+        First Name: {{studentDataBeingEdited && studentDataBeingEdited.firstName}}
+    </p>
+
+    <p>
+        Last Name: {{studentDataBeingEdited && studentDataBeingEdited.lastName}}
+    </p>
+
+    <div >
+        <button (click)="dialogRef.close()">
+            OK
+        </button>
+    </div>
+</ng-template>
+
+<!-- edit student template -->
+<ng-template #editStudentDialog let-dialogRef="dialogRef">
+    <h2>
+        {{(!editMode) ? `Add` : `Edit ${studentDataBeingEdited && studentDataBeingEdited.firstName}`}}
+    </h2>
+
+    <div >
+        <button (click)="dialogRef.close()">
+            Cancel
+        </button>
+        <button (click)="saveEditedStudentData(dialogRef)">
+            Save
+        </button>
+    </div>
+</ng-template>
+
+
+<!-- delete student template -->
+ <ng-template #confirmDeleteStudentDialog let-dialogRef="dialogRef">
+    <h2>
+        Delete {{studentDataBeingEdited && studentDataBeingEdited.firstName}} ?
+    </h2>
+
+    <div >
+        <button (click)="dialogRef.close()">
+            Cancel
+        </button>
+        <button (click)="confirmDeleteStudent(dialogRef)">
+            OK
+        </button>
+    </div>
+ </ng-template>
