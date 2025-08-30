@@ -1,5 +1,5 @@
 <mat-card class="m-4">
-    <mat-card-header class="d-flex justify-between w-100">
+    <mat-card-header class="d-flex justify-content-between w-100">
         <mat-card-title>Student List</mat-card-title>
         <button
         (click)="onAddStudent()"
@@ -18,55 +18,228 @@
 </mat-card>
 
 <!-- view student data template -->
-<ng-template #viewStudentDataDialog let-dialogRef="dialogRef">
-    <h2>
-        Student Details 
-    </h2>
+<ng-template #viewStudentDataDialog let-dialogRef="dialogRef" >
+    <div class="p-3">
+        <h3>
+            Student Details 
+        </h3>
 
-    <p>
-        First Name: {{studentDataBeingEdited && studentDataBeingEdited.firstName}}
-    </p>
+        <p class="m-0 p-0">
+            First Name: {{studentDataBeingEdited && studentDataBeingEdited.firstName}}
+        </p>
 
-    <p>
-        Last Name: {{studentDataBeingEdited && studentDataBeingEdited.lastName}}
-    </p>
+        <p class="m-0 p-0">
+            Last Name: {{studentDataBeingEdited && studentDataBeingEdited.lastName}}
+        </p>
 
-    <div >
-        <button (click)="dialogRef.close()">
-            OK
-        </button>
+        <p class="m-0 p-0">
+            Date of Birth: {{studentDataBeingEdited && studentDataBeingEdited.dob}}
+        </p>
+
+        <p class="m-0 p-0">
+            Score: {{studentDataBeingEdited && studentDataBeingEdited.score}}
+        </p>
+
+        <p class="m-0 p-0">
+            Class: {{studentDataBeingEdited && studentDataBeingEdited.class}}
+        </p>
+
+        <div class="col-12 m-0 mt-2 p-0">
+            <mat-label class="">Passport photo</mat-label>
+            <div class="col-12 m-0 p-0" >
+                <img [src]="previewPassportPhotoUrl" alt="passport"
+                class="w-50"
+                >
+            </div>
+        </div>
+
+        <div class="col-12 m-0 mt-2 p-0">
+            <mat-label class="">ID front photo</mat-label>
+            <div class="col-12 m-0 p-0" >
+                <img [src]="previewFrontIDPhotoUrl" alt="ID front"
+                class="w-50"
+                >
+            </div>
+        </div>
+
+        <div class="col-12 m-0 mt-2 p-0">
+            <mat-label class="">ID back photo</mat-label>
+            <div class="col-12 m-0 p-0" >
+                <img [src]="previewBackIDPhotoUrl" alt="ID back"
+                class="w-50"
+                >
+            </div>
+        </div>
+
+        <div class="col-12 p-0">
+            <button (click)="dialogRef.close()"
+            class="col-12 m-0 rounded-pill py-2"
+            >
+                OK
+            </button>
+        </div>
     </div>
 </ng-template>
 
 <!-- edit student template -->
-<ng-template #editStudentDialog let-dialogRef="dialogRef">
-    <h2>
-        {{(!editMode) ? `Add` : `Edit ${studentDataBeingEdited && studentDataBeingEdited.firstName}`}}
-    </h2>
+<ng-template #editStudentDialog let-dialogRef="dialogRef" class="p-4">
+    <form [formGroup]="editStudentForm" class="col-12 p-3">
+        <h3>
+            {{(!editMode) ? `Add` : `Edit ${studentDataBeingEdited && studentDataBeingEdited.firstName}`}}
+        </h3>
 
-    <div >
-        <button (click)="dialogRef.close()">
-            Cancel
+        <mat-form-field appearance="fill" class="m-0 p-0 col-12">
+            <mat-label>First Name</mat-label>
+            <input matInput placeholder="enter first name" formControlName="firstName" />
+            <mat-error *ngIf="editStudentForm.get('firstName')?.hasError('required') && editStudentForm.get('firstName')?.touched" >
+                First name is required
+            </mat-error>
+            <mat-error *ngIf="editStudentForm.get('firstName')?.hasError('required') && editStudentForm.get('firstName')?.invalid">
+                Enter a valid name
+            </mat-error>
+        </mat-form-field>
+
+        <mat-form-field class="m-0 p-0 col-12">
+            <mat-label>Last Name</mat-label>
+            <input matInput placeholder="enter last name" formControlName="lastName" />
+        </mat-form-field>
+
+        <mat-form-field appearance="fill" class="m-0 p-0 col-12">
+            <mat-label>Select D.O.B</mat-label>
+            <input matInput 
+            [matDatepicker]="dobPicker" 
+            placeholder="enter D.O.B" 
+            formControlName="dob" />
+
+            <mat-datepicker-toggle matSuffix [for]="dobPicker" />
+            <mat-datepicker #dobPicker type="date"/>
+        </mat-form-field>
+
+        <mat-form-field class="m-0 p-0 col-12">
+            <mtx-select placeholder="select class" formControlName="class" >
+                <mtx-option *ngFor="let classOption of classOptions" [value]="classOption">
+                    {{classOption}}
+                </mtx-option>
+            </mtx-select>
+        </mat-form-field>
+
+        <mat-form-field class="col-12 m-0 p-0">
+            <mat-label>Score</mat-label>
+            <input matInput placeholder="enter score" formControlName="score" />
+        </mat-form-field>
+
+        <!-- <mat-form-field class="m-0 p-0"> -->
+        <mat-label>Upload passport photo</mat-label>
+        <button class="border-0 col-12 m-0" (click)="passportPhotoInput.click()">
+
+            <img
+            [src]="previewPassportPhotoUrl"
+            alt="click to upload"
+            class="img-thumbnail w-50"
+            />
+
+            <input
+            hidden
+            placeholder="select image"
+            type="file"
+            accept="image/*"
+            formControlName="passportPhotoUrl"
+            #passportPhotoInput
+            (change)="onPassportPhotoSelected($event)"
+            />
+
+            <p >select image</p>
+
         </button>
-        <button (click)="saveEditedStudentData(dialogRef)">
-            Save
+        <!-- </mat-form-field> -->
+
+        <!-- <mat-form-field class="m-0 p-0"> -->
+        <mat-label>Upload front ID photo</mat-label>
+        <button class="border-0 col-12 m-0" (click)="frontIDPhotoInput.click()">
+
+            <img
+            [src]="previewFrontIDPhotoUrl"
+            alt="click to upload"
+            class="img-thumbnail w-50"
+            />
+
+            <input
+            hidden
+            placeholder="select image"
+            type="file"
+            accept="image/*"
+            formControlName="frontIDPhotoUrl"
+            #frontIDPhotoInput
+            (change)="onFrontIDPhotoSelected($event)"
+            />
+
+            <p >select image</p>
+
         </button>
-    </div>
+        <!-- </mat-form-field> -->
+
+        <!-- <mat-form-field class="m-0 p-0"> -->
+        <mat-label>Upload back ID photo</mat-label>
+        <button class="border-0 col-12 m-0" (click)="backIDPhotoInput.click()">
+
+            <img
+            [src]="previewBackIDPhotoUrl"
+            alt="click to upload"
+            class="img-thumbnail w-50"
+            />
+
+            <input
+            hidden
+            placeholder="select image"
+            type="file"
+            accept="image/*"
+            formControlName="backIDPhotoUrl"
+            #backIDPhotoInput
+            (change)="onBackIDPhotoSelected($event)"
+            />
+
+            <p >select image</p>
+
+        </button>
+        <!-- </mat-form-field> -->
+
+        <div class="d-flex p-0 my-3 justify-content-between">
+            <button 
+            class="col-4 m-0 rounded-pill py-2"
+            (click)="dialogRef.close()">
+                Cancel
+            </button>
+
+            <button 
+            class="col-4 m-0 rounded-pill py-2 mt-2 mt-md-0"
+            (click)="saveEditedStudentData(dialogRef)">
+                Save
+            </button>
+        </div>
+    </form>
 </ng-template>
 
 
 <!-- delete student template -->
  <ng-template #confirmDeleteStudentDialog let-dialogRef="dialogRef">
-    <h2>
-        Delete {{studentDataBeingEdited && studentDataBeingEdited.firstName}} ?
-    </h2>
+    <div class="p-3">
+        <h3 class="text-center my-4">
+            Delete {{studentDataBeingEdited && studentDataBeingEdited.firstName}} ?
+        </h3>
 
-    <div >
-        <button (click)="dialogRef.close()">
-            Cancel
-        </button>
-        <button (click)="confirmDeleteStudent(dialogRef)">
-            OK
-        </button>
+        <div class="d-flex justify-content-between mt-4">
+            <button 
+            (click)="dialogRef.close()"
+            class="col-4 py-2 rounded-pill"
+            >
+                Cancel
+            </button>
+            <button 
+            (click)="confirmDeleteStudent(dialogRef)"
+            class="col-4 py-2 rounded-pill"
+            >
+                OK
+            </button>
+        </div>
     </div>
  </ng-template>

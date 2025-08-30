@@ -31,6 +31,7 @@
     "@ngx-translate/core": "^16.0.0",
     "@ngx-translate/http-loader": "^16.0.0",
     "base64-js": "^1.5.1",
+    "bootstrap": "^5.3.8",
     "date-fns": "^4.1.0",
     "ng-matero": "^20.0.1",
     "ngx-permissions": "^19.0.0",
