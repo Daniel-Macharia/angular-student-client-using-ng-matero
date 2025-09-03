@@ -1,0 +1,48 @@
+<div class="h-100 align-content-center">
+    <mat-card class="p-4 ">
+        <mat-card-header>
+            <mat-card-title>
+                Login
+            </mat-card-title>
+        </mat-card-header>
+
+        <mat-card-content>
+            <form [formGroup]="loginForm" class="col-12 m-0 p-3">
+                <mat-form-field class="col-12 m-0">
+                    <mat-label>
+                        username
+                    </mat-label>
+
+                    <input
+                    matInput
+                    class="col-12 m-0"
+                    placeholder="enter username"
+                    formControlName="username"
+                    />
+                </mat-form-field>
+
+                <mat-form-field class="col-12 m-0">
+                    <mat-label>
+                        password
+                    </mat-label>
+
+                    <input
+                    matInput
+                    class="col-12 m-0"
+                    placeholder="enter username"
+                    formControlName="password"
+                    />
+                </mat-form-field>
+
+                <div class="m-0 p-0 py-3">
+                    <button
+                    type="button"
+                    class="rounded-pill col-12 border-1 border-black text-black p-3"
+                    (click)="handleLoginAction()">
+                    login
+                    </button>
+                </div>
+            </form>
+        </mat-card-content>
+    </mat-card>
+</div>
