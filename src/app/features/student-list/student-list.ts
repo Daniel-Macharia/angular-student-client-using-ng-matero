@@ -14,21 +14,11 @@ import { MtxSelectModule } from '@ng-matero/extensions/select';
 import { FormBuilder, FormGroup, ReactiveFormsModule, Validators } from '@angular/forms';
 import { CommonModule } from '@angular/common';
 
-import { MtxDatetimepickerModule } from '@ng-matero/extensions/datetimepicker';
-import { MtxNativeDatetimeModule } from '@ng-matero/extensions/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
-
-interface StudentData{
-  studentId: number,
-  firstName: string,
-  lastName: string,
-  dob: Date,
-  class: string,
-  score: number,
-  passportPhotoUrl: string,
-  frontIDPhotoUrl: string,
-  backIDPhotoUrl: string
-};
+import { StudentClass, StudentData } from '../models/student-models';
+import { StudentListService } from '../student-list-service';
+import { StudentStatus } from '../enums/student-status';
+import { ToastrService } from 'ngx-toastr';
 
 @Component({
   selector: 'app-student-list',
@@ -47,6 +37,7 @@ interface StudentData{
     MatChipsModule,
     ReactiveFormsModule,
     MatDatepickerModule,
+    ToastrService
   ],
   templateUrl: './student-list.html',
   styleUrl: './student-list.css'
@@ -55,23 +46,37 @@ export class StudentList implements OnInit{
 
   private mtxDialog = inject(MtxDialog);
   private formBuilder = inject(FormBuilder);
+  private studentService = inject(StudentListService);
+  private toastr = inject(ToastrService);
 
   @ViewChild('editStudentDialog') editStudentDialog!: TemplateRef<any>;
   @ViewChild('confirmDeleteStudentDialog') confirmDeleteStudentDialog!: TemplateRef<any>;
 
   @ViewChild('viewStudentDataDialog') viewStudentDataDialog!: TemplateRef<any>;
 
-  studentDataBeingEdited: StudentData|null = null;
+  studentDataBeingEdited: StudentData = {
+      studentId: 0,
+      firstName: '',
+      lastName: '',
+      dateOfBirth: new Date(),
+      studentClass: {name: '', definition: ''},
+      studentStatus: StudentStatus.DELETED,
+      score: 0,
+      studentPassportPhoto: '',
+      studentIDFrontPhoto: '',
+      studentIDBackPhoto: ''
+    };
   editMode = false;
-  classOptions: string[] = [ 'Class 1', 'Class 2', 'Class 3'];
+
+  classOptions: StudentClass[] = [];
 
   editStudentForm: FormGroup = this.formBuilder.group({
     studentId: 0,
       firstName: '',
       lastName: '',
-      dob: [null],
-      class: '',
-      score: 0,
+      dateOfBirth: [null],
+      class: null,
+      score: null,
       passportPhotoUrl: '',
       frontIDPhotoUrl: '',
       backIDPhotoUrl: ''
@@ -87,10 +92,13 @@ export class StudentList implements OnInit{
 
   columns: MtxGridColumn[] = [
     {header: 'Student Name', field: `firstName`, sortable: true},
-    {header: 'D.O.B', field: 'dob', sortable: true, formatter(rowData, colDef) {
-      return colDef?.field && rowData[colDef.field].toDateString();
+    {header: 'D.O.B', field: 'dateOfBirth', sortable: true, formatter(rowData) {
+      return new Date(rowData.dateOfBirth).toLocaleDateString();
     },},
-    {header: 'Class', field: 'class', sortable: true},
+    {header: 'Class', field: 'studentClass', sortable: true, formatter(rowData) {
+      return rowData.studentClass;
+    },},
+    {header: 'Status', field: 'studentStatus', sortable: true},
     {header: 'Score', field: 'score', sortable: true},
     {header: 'Actions', field: 'action', type: 'button',
       buttons: [
@@ -101,59 +109,41 @@ export class StudentList implements OnInit{
     }
   ];
 
-  students:StudentData[] = [
-    {
-      studentId: 1,
-      firstName: 'Daniel',
-      lastName: 'Macharia',
-      dob: new Date(),
-      class: 'Class1',
-      score: 89,
-      passportPhotoUrl: '',
-      frontIDPhotoUrl: '',
-      backIDPhotoUrl: ''
-    },
-    {
-      studentId: 2,
-      firstName: 'Jackie',
-      lastName: 'Chan',
-      dob: new Date(),
-      class: 'Class2',
-      score: 87,
-      passportPhotoUrl: '',
-      frontIDPhotoUrl: '',
-      backIDPhotoUrl: ''
-    },
-    {
-      studentId: 3,
-      firstName: 'Kim',
-      lastName: 'Possible',
-      dob: new Date(),
-      class: 'Class3',
-      score: 79,
-      passportPhotoUrl: '',
-      frontIDPhotoUrl: '',
-      backIDPhotoUrl: ''
-    },
-  ];
+  students:StudentData[] = [];
 
 
   ngOnInit(): void {
-    this.editStudentForm = this.formBuilder.group({
-      studentId: 0,
-      firstName: ['', [Validators.required, Validators.name]],
-      lastName: ['', [Validators.required, Validators.name]],
-      dob: [null],
-      class: '',
-      score: [0, [Validators.min(0), Validators.max(100)]],
-      passportPhotoUrl: '',
-      frontIDPhotoUrl: '',
-      backIDPhotoUrl: ''
-    });
+    console.log('initializing component');
+    // this.editStudentForm = this.formBuilder.group({
+    //   studentId: 0,
+    //   firstName: ['', [Validators.required, Validators.name]],
+    //   lastName: ['', [Validators.required, Validators.name]],
+    //   dateOfBirth: [null],
+    //   class: '',
+    //   score: [0, [Validators.min(0), Validators.max(100)]],
+    //   passportPhotoUrl: '',
+    //   frontIDPhotoUrl: '',
+    //   backIDPhotoUrl: ''
+    // });
 
     this.editStudentForm.valueChanges.subscribe( (value: StudentData) => {
       console.log(value);
     });
+
+    this.studentService.getAllStudents().subscribe((data) => {
+      this.students = data;
+      console.log(data);
+    });
+
+    this.studentService.getClassOptions()
+    .subscribe( (data) => {
+      this.classOptions = data;
+
+      console.log(data);
+      console.log(this.classOptions);
+    });
+
+    console.log('finished initializing component');
   }
 
   get firstName(){
@@ -177,21 +167,46 @@ export class StudentList implements OnInit{
       studentId: 0,
       firstName: '',
       lastName: '',
-      dob: new Date(),
-      class: '',
+      dateOfBirth: new Date(),
+      studentClass: {name: '', definition: ''},
+      studentStatus: StudentStatus.DELETED,
       score: 0,
-      passportPhotoUrl: '',
-      frontIDPhotoUrl: '',
-      backIDPhotoUrl: ''
+      studentPassportPhoto: '',
+      studentIDFrontPhoto: '',
+      studentIDBackPhoto: ''
     };
 
+    this.editStudentForm = this.formBuilder.group({
+      firstName: null,
+      lastName: null,
+      score: null,
+      studentClass: null,
+      studentStatus: null,
+      dateOfBirth: null,
+      studentId: null,
+      studentPassportPhoto: null,
+      studentIDFrontPhoto: null, 
+      studentIDBackPhoto: null
+    });
+    
     this.mtxDialog.originalOpen(this.editStudentDialog, {width: '400px'});
   }
 
   onView(record: StudentData){
-    console.log(`\n\nViewing: \n${record}\n\n`);
+    console.log(`Viewing: `, record);
+    this.studentDataBeingEdited.firstName = record.firstName;
+    this.studentDataBeingEdited.lastName = record.lastName;
+    this.studentDataBeingEdited.dateOfBirth = record.dateOfBirth;
+    this.studentDataBeingEdited.score = record.score;
+    this.studentDataBeingEdited.studentClass = record.studentClass;
+    this.studentDataBeingEdited.studentStatus = record.studentStatus;
 
-    this.studentDataBeingEdited = record;
+    this.studentDataBeingEdited.studentPassportPhoto = record.studentPassportPhoto;
+    this.studentDataBeingEdited.studentIDFrontPhoto = record.studentIDFrontPhoto;
+    this.studentDataBeingEdited.studentIDBackPhoto = record.studentIDBackPhoto;
+
+    console.log(`Current: `, this.studentDataBeingEdited);
+
     this.mtxDialog.originalOpen(this.viewStudentDataDialog, {width: '400px'});
   }
 
@@ -200,6 +215,20 @@ export class StudentList implements OnInit{
 
     this.editMode = true;
     this.studentDataBeingEdited = record;
+    this.editStudentForm = this.formBuilder.group({
+      firstName: this.studentDataBeingEdited.firstName,
+      lastName: this.studentDataBeingEdited.lastName,
+      score: this.studentDataBeingEdited.score,
+      studentClass: this.studentDataBeingEdited.studentClass,
+      studentStatus: this.studentDataBeingEdited.studentStatus,
+      dateOfBirth: this.studentDataBeingEdited.dateOfBirth,
+      studentId: this.studentDataBeingEdited.studentId,
+      studentPassportPhoto: null,//this.studentDataBeingEdited.studentPassportPhoto,
+      studentIDFrontPhoto: null, //this.studentDataBeingEdited.studentIDFrontPhoto,
+      studentIDBackPhoto: null//this.studentDataBeingEdited.studentIDBackPhoto,
+    });
+
+    this.toastr.info(`ID: ${this.studentDataBeingEdited.studentId}`);
 
     this.mtxDialog.originalOpen(this.editStudentDialog, {width: '400px'});
   }
@@ -208,7 +237,70 @@ export class StudentList implements OnInit{
   {
     console.log(`Saving edited student data`);
     console.log(this.editStudentForm.value);
-    dialogRef.close();
+
+    if( this.editStudentForm.value !== null )
+    {
+      if( this.selectedPassportPhoto === null )
+      {
+        this.toastr.info('passport photo is required. Please upload');
+        return;
+      }
+
+      if( this.selectedFrontIDPhoto === null )
+      {
+        this.toastr.info('ID front photo is required. Please upload');
+        return;
+      }
+
+      if( this.selectedBackIDPhoto === null )
+      {
+        this.toastr.info('ID back photo is required. Please upload');
+        return;
+      }
+
+      if( !this.editMode )
+      {
+        this.studentService.createStudent({
+        studentId: 0,
+        firstName: this.editStudentForm.value['firstName'],//this.studentDataBeingEdited.firstName,
+        lastName: this.editStudentForm.value['lastName'],//this.studentDataBeingEdited.lastName,
+        dateOfBirth: this.editStudentForm.value['dateOfBirth'],//this.studentDataBeingEdited.dateOfBirth,
+        studentClass: this.editStudentForm.value['studentClass'],//this.studentDataBeingEdited.class,
+        studentStatus: StudentStatus.ACTIVE,
+        score: this.editStudentForm.value['score'],//this.studentDataBeingEdited.score,
+        passportPhotoUrl: this.selectedPassportPhoto,
+        frontIDPhotoUrl: this.selectedFrontIDPhoto,
+        backIDPhotoUrl: this.selectedBackIDPhoto
+      }).subscribe({
+        next: (data) => this.toastr.success(data), 
+        error: (error) => {this.toastr.error(error);}
+      });
+      }
+      else{
+        this.studentService.editStudent({
+        studentId: this.editStudentForm.value['studentId'],
+        firstName: this.editStudentForm.value['firstName'],
+        lastName: this.editStudentForm.value['lastName'],
+        dateOfBirth: this.editStudentForm.value['dateOfBirth'],
+        studentClass: this.editStudentForm.value['studentClass'],
+        studentStatus: this.editStudentForm.value['studentStatus'],
+        score: this.editStudentForm.value['score'],
+        passportPhotoUrl: this.selectedPassportPhoto,
+        frontIDPhotoUrl: this.selectedFrontIDPhoto,
+        backIDPhotoUrl: this.selectedBackIDPhoto
+        }).subscribe({
+          next: (data) => this.toastr.success(data),
+          error: (error) => this.toastr.error(error)
+        });
+      }
+
+      
+
+      dialogRef.close();
+    }
+    else{
+      this.toastr.info('complete filling the form before submitting');
+    }
   }
 
   onDelete(record: StudentData){
@@ -220,7 +312,14 @@ export class StudentList implements OnInit{
 
   confirmDeleteStudent(dialogRef: DialogRef)
   {
-    console.log(`Confirmed delete of: ${this.studentDataBeingEdited?.firstName}`);
+    this.toastr.warning(`Confirmed delete of: ${this.studentDataBeingEdited?.firstName}\nID: ${this.studentDataBeingEdited?.studentId}`);
+
+    this.studentService.deleteStudent(this.studentDataBeingEdited?.studentId)
+    .subscribe({
+      next: (data) => this.toastr.info(data.toString()),
+      error: (error) => this.toastr.error(error)
+    });
+
     dialogRef.close();
   }
 
@@ -234,7 +333,7 @@ export class StudentList implements OnInit{
       
         if( !this.selectedPassportPhoto?.type.startsWith('image/') )
       {
-        alert('only images are allowed!');
+        this.toastr.error('only images are allowed!');
 
         this.selectedPassportPhoto = null;
         this.previewPassportPhotoUrl = null;
@@ -257,7 +356,7 @@ export class StudentList implements OnInit{
       
         if( !this.selectedFrontIDPhoto?.type.startsWith('image/') )
       {
-        alert('only images are allowed!');
+        this.toastr.error('only images are allowed!');
 
         this.selectedFrontIDPhoto = null;
         this.previewFrontIDPhotoUrl = null;
@@ -280,7 +379,7 @@ export class StudentList implements OnInit{
       
         if( !this.selectedBackIDPhoto?.type.startsWith('image/') )
       {
-        alert('only images are allowed!');
+        this.toastr.error('only images are allowed!');
 
         this.selectedBackIDPhoto = null;
         this.previewBackIDPhotoUrl = null;
@@ -292,5 +391,13 @@ export class StudentList implements OnInit{
 
       reader.readAsDataURL(this.selectedBackIDPhoto);
     }
+  }
+
+  onRefreshStudentList()
+  {
+    this.studentService.getAllStudents().subscribe((data) => {
+      this.students = data;
+      console.log(data);
+    });
   }
 }

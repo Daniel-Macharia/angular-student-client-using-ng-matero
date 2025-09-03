@@ -32,7 +32,6 @@ import { formlyConfigFactory, PaginatorI18nService } from '@shared';
 import { routes } from './app.routes';
 
 import { LoginService } from '@core/authentication/login.service';
-import { FakeLoginService } from './fake-login.service';
 
 export const appConfig: ApplicationConfig = {
   providers: [
@@ -60,7 +59,7 @@ export const appConfig: ApplicationConfig = {
     // ==================================================
     // 👇 ❌ Remove it in the realworld application
     //
-    { provide: LoginService, useClass: FakeLoginService },
+    { provide: LoginService, useClass: LoginService },
     //
     // ==================================================
     provideFormlyCore([...withFormlyMaterial()]),
